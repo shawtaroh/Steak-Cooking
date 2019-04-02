@@ -4,7 +4,9 @@
 %
 function steak_sim_dirichlet_CNM( P )
 addpath('./steaksrc/');
-load('phi_root_interp_175_phi0_21.mat','T_interp','phi_interp')
+%load('phi_root_interp_175_phi0_21.mat','T_interp','phi_interp')
+load('phi_root_interp_175_phi0_updated_62.mat','T_interp','phi_interp')
+
 % output all parameters to a file
 %
 paramfile( P );
@@ -196,8 +198,16 @@ for k=1:Nt
         S.phi(1,i)= interp1(T_interp,phi_interp,min(1,max(0,(S.Told(1,i)*(P.T_D-P.T_0)+P.T_0-273)/175))); % Use previous T on boundary to interpolate preprocessed root data
         S.phi(P.Ny,i)= interp1(T_interp,phi_interp,min(1,max(0,(S.Told(P.Ny,i)*(P.T_D-P.T_0)+P.T_0-273)/175))); % Use previous T on boundary to interpolate preprocessed root data
         % Dirichlet Condition on Temp Top and Bottom
-        S.T(1,i) = 1;
-        S.T(P.Ny,i) = 1;
+        if(t*P.t_0<60*5)
+           S.T(1,i) = ((90+273)-P.T_0)/(P.T_D-P.T_0)/5*t*P.t_0/60; 
+           S.T(P.Ny,i) = ((90+273)-P.T_0)/(P.T_D-P.T_0)/5*t*P.t_0/60; 
+        else
+           S.T(1,i) = ((90+273)-P.T_0)/(P.T_D-P.T_0)+(t*P.t_0/60-5)*0.0058; 
+           S.T(P.Ny,i) = ((90+273)-P.T_0)/(P.T_D-P.T_0)+(t*P.t_0/60-5)*0.0058;
+        end
+        
+           S.T(1,i) = 1; 
+           S.T(P.Ny,i) = 1;
         h(1,i,1) = h_0*sqrt(P.phi_0*(S.phi(1,i)).^(-1).*xi(P,S.T(1,i)));
         h(1,i,2) = h_0*sqrt(P.phi_0*(S.phi(1,i)).^(-1)./xi(P,S.T(1,i)));
         h(P.Ny,i,1) = h_0*sqrt(P.phi_0*(S.phi(P.Ny,i)).^(-1).*xi(P,S.T(P.Ny,i)));
@@ -256,16 +266,17 @@ S.phi(P.Ny,P.Nx)=(S.phi(P.Ny,P.Nx-1)+S.phi(P.Ny-1,P.Nx))/2;
 
     
     % Stop for internal temperature 65 deg C
-    if(S.T(floor(P.Ny/2),floor(P.Nx/2))*(P.T_D-P.T_0)+P.T_0-273>65)
+    if(S.T(floor(P.Ny/2),floor(P.Nx/2))*(P.T_D-P.T_0)+P.T_0-273>70)
         endFlag = 1;
     end
     
     S.isFirst = 0;
     %% Video and Saving Files
     
+   
     if( mod(k,P.outevery)==0 )
         
-        if( mod(k,P.outevery*100)==0 )
+        if( mod(k,P.outevery*10)==0 )
         plot(1);
         % Get x,y coordinates from h
         [x y] = visualize(h);

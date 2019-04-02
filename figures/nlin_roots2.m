@@ -1,11 +1,13 @@
 % nonline_roots_coupled.m - Solves boundary conditions (preprocess)
 % for P.T_D=100, P.T_0=0
-P = setdefaultparams_steak();
+P = setdefaultparams_steak(1e-16,1e-16);
+    P.chi_pd=.765;
+    P.chi_pn=.7;
 tic
-step = 1e-3; % Should use small step
+step = 1e-2; % Should use small step
 
-T = 0:step:40/(P.T_D-P.T_0); % Constant phi ~ .41 valid up to 40 deg c
-T_0 = 0:6e-4:80/(P.T_D-P.T_0); % Initial guess range
+T = 0:step:1; % Constant phi ~ .41 valid up to 40 deg c
+T_0 = 0:1e-1:1; % Initial guess range
 t = 0;
 for k = 1:length(T)
     k

@@ -1,20 +1,21 @@
 %
 % nlin_roots.m - solves pi_sw=0
 %
-P = setdefaultparams_steak();
+P = setdefaultparams_steak(1e-16,1e-16);
 
 %S.T*(P.T_D-P.T_0)+ones(size(S.T))*(P.T_0-273)
-T = 0*ones(size(S.phi(end/2,:)));
-phi = S.phi(end/2,:);
-pi_sw = P.mu_0/P.t_0*(pi_el(P,T,phi) + pi_mix(P,T,phi))
+%T = 0*ones(size(S.phi(end/2,:)));
+%phi = S.phi(end/2,:);
+%pi_sw = P.mu_0/P.t_0*(pi_el(P,T,phi) + pi_mix(P,T,phi))
 % phi_0 = 20.5, phi_final = .54
-P.chi_pd=.9;
-P.chi_pn=.7;
+%P.chi_pd=.9;
+%P.chi_pn=.7;
 
 %P.chi_pd=.92;
 %P.chi_pn=.72;
 
-
+    P.chi_pd=.76;
+    P.chi_pn=.7;
 %P.phi_0 = 0.174029030084110;
 % for phi*(T=0) = %17.403, phi*(T=1)=%43.472
 step=1e-2

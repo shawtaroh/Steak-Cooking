@@ -1,14 +1,9 @@
 %Datadir ='.\dir_1e18_5e16\'
-%Datadir ='.\dir_1e18_2e17\'
+%Datadir ='.\dir_1e-18_2.5e-17\'
+Datadir ='.\dir_new_2.5e-18_2.5e-17\'
 
+%Datadir ='.\dir_1e-18_6.5684e-16\'
 
-k_init=2.25e-18*1.5;
-
-while (k_init<1e-16)
-    k_fin=1e-18*1.5^12;
-    while (k_fin<6e-16)
-        Datadir =strcat('.\dir_', num2str(k_init),'_',num2str(k_fin),'\')
-        pause
         %P=setdefaultparams_steak(k_init,k_fin);
         %steak_sim_dirichlet(P);
 
@@ -25,7 +20,7 @@ names = matFiles.name;
 numFilesTenMin = floor(10*60/P.t_0/P.dt/P.outevery);
 hold on;
 counter = 1;
-for k_t=[length(matFiles)-1]
+for k_t=[11 31 51]
 %for k_t=[50]
     disp(k_t)
     length(matFiles)
@@ -41,15 +36,9 @@ for k_t=[length(matFiles)-1]
     % Horizontal Slice, Moisture Conent  
     %plot(x(end/2,:),(ones(size(S.phi(end/2,:)))-S.phi(end/2,:))./(ones(size(S.phi(end/2,:)))+.3*S.phi(end/2,:)),'LineWidth',2);
     % Vertical Slice, Moisture Conent  
-    if(1)
-    plot(y(:,ceil(end/2))/max(y(:,ceil(end/2))),100*(ones(size(S.phi(:,ceil(end/2))))-S.phi(:,ceil(end/2)))./(ones(size(S.phi(:,ceil(end/2))))+.3*S.phi(:,ceil(end/2))),'--','LineWidth',2);
-    if(k_t==32)
-        plot(x_1/max(x_1),nn_1*100,'*','Color','k','LineWidth',2) 
-    end
-    
-    if(k_t==min(60,length(matFiles)-1))
-        plot(x_2/max(x_2),nn_2*100,'*','Color','k','LineWidth',2) 
-    end
+    if(0)
+    plot(y(:,ceil(end/2))/max(y(:,ceil(end/2))),100*(ones(size(S.phi(:,ceil(end/2))))-S.phi(:,ceil(end/2)))./(ones(size(S.phi(:,ceil(end/2))))+.3*S.phi(:,ceil(end/2))),'LineWidth',2);
+
     end
     %    if(counter == 4)
     %plot(y(:,ceil(end/2)),(ones(size(S.phi(:,ceil(end/2))))-S.phi(:,ceil(end/2)))./(ones(size(S.phi(:,ceil(end/2))))+.3*S.phi(:,ceil(end/2))),'--','Color',	[0, 0.4470, 0.7410],'LineWidth',2);
@@ -62,7 +51,7 @@ for k_t=[length(matFiles)-1]
     %Moisture Content Orig B.C. + Diffusion, Vertical, T_D = 175 \circ C, c_0 Bengston
     % Temperature 
     %plot(x(end/2,:),S.T(end/2,:)*(P.T_D-P.T_0)+(P.T_0-273)*ones(size(S.T(end/2,:))),'LineWidth',2)
-    %plot(y(:,ceil(end/2))./max(y(:,ceil(end/2))),S.T(:,ceil(end/2))*(P.T_D-P.T_0)+(P.T_0-273)*ones(size(S.T(:,ceil(end/2)))),'LineWidth',2)
+    plot(y(:,ceil(end/2))./max(y(:,ceil(end/2))),S.T(:,ceil(end/2))*(P.T_D-P.T_0)+(P.T_0-273)*ones(size(S.T(:,ceil(end/2)))),'LineWidth',2)
     %if(counter == 3)
     %plot(y(:,ceil(end/2)),S.T(:,ceil(end/2))*(P.T_D-P.T_0)+(P.T_0-273)*ones(size(S.T(:,ceil(end/2)))),'--','Color',	[0, 0.4470, 0.7410],'LineWidth',2)
     %end
@@ -79,10 +68,6 @@ for k_t=[length(matFiles)-1]
 
 end
 
-        k_fin=1.5*k_fin;
-    end
-    k_init=1.5*k_init;
-end
 
 return;
 % Moisture Content DATA
@@ -122,11 +107,11 @@ x=[0 10 20 27.5 40 50 55];
 x=(x/10-2.75*ones(size(x)))/2.75;
 %x=x*YY(3,end,ceil(end/2))/2.75;
 T = [60 24 9 6  20 46 61];
-plot(x,T,'d','Color','k','LineWidth',3);
+plot(x,T,'o','Color',[0,0,1],'LineWidth',3);
 T = [91 64 44 35  52 76 88];
-plot(x,T,'d','Color','k','LineWidth',3);
+plot(x,T,'o','Color',[1,0,0],'LineWidth',3);
 T = [93 78 67 64  72 85 93];
-plot(x,T,'d','Color','k','LineWidth',3);
+plot(x,T,'o','Color',[0.75, 0.75, 0],'LineWidth',3);
 
 
 end

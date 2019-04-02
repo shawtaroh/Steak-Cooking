@@ -2,16 +2,17 @@
 % steak_sim -- simulates steak
 %
 %
-function steak_sim_dirichlet( P )
+function steak_sim_dirichlet_CNM( P )
 addpath('./steaksrc/');
-load('phi_root_interp_175_phi0_updated_62.mat','T_interp','phi_interp')
 %load('phi_root_interp_175_phi0_21.mat','T_interp','phi_interp')
+load('phi_root_interp_175_phi0_updated_62.mat','T_interp','phi_interp')
+
 % output all parameters to a file
 %
 paramfile( P );
 
 % Make Movie while simulating
-writerObj1 = VideoWriter('steak_movie_dirichlet');
+writerObj1 = VideoWriter('perm1e-17_diff_CNM');
 writerObj1.FrameRate=5;
 open(writerObj1);
 Datadir =P.datadir;
@@ -24,7 +25,7 @@ fig = figure('Position',[scrsz(3)/2 scrsz(4)/2 720 720])
 % Optional if not using equilibrium values in setdefaultparams
 %P.phi_0 = root(P,0);
 
-P.phi_0 = interp1(T_interp,phi_interp,min(1,(P.T_0-273)/P.T_D));
+P.phi_0 = interp1(T_interp,phi_interp,min(1,max(0,(P.T_0-273)/175)));
 
 outcount = 0;
 t=0;
@@ -62,6 +63,7 @@ for k=1:Nt
     % 1.  Phi^{k+1} <- Phi^{k}, T^{k}, w^{k}, h^{k}
     
     S.phiold=S.phi;
+    
     % Finite Differences
     phi_w_1_fdx = (((ones(size(S.phi))-S.phiold).*S.w(:,:,1))*fDx)./fH(:,:,1);
     phi_w_1_bdx = (((ones(size(S.phi))-S.phiold).*S.w(:,:,1))*bDx)./bH(:,:,1);
@@ -117,13 +119,12 @@ for k=1:Nt
     
     %Isolating T^{k+1} from 7.5.4
 
-    RHS = P.omega*(P.omega-1)*ones(size(S.phiold))./(P.omega*(ones(size(S.phiold))-S.phiold)+S.phiold).^2;
-    RHS = RHS.*phi_cdx.*T_cdx;
-    RHS = RHS+P.omega*ones(size(S.phiold))./(P.omega*(ones(size(S.phiold))-S.phiold)+S.phiold).*T_xx;
+    RHS = ((P.omega-1)*ones(size(S.phiold))+(P.omega*(P.omega-1)*ones(size(S.phiold))./(P.omega*(ones(size(S.phiold))-S.phiold)+S.phiold).^2))/2.*phi_cdx.*T_cdx;
+    RHS = RHS+((ones(size(S.phiold))-(1-P.omega)*S.phiold)+(P.omega*ones(size(S.phiold))./(P.omega*(ones(size(S.phiold))-S.phiold)+S.phiold)))/2.*T_xx;
     
-    RHS = RHS + (P.omega-1)*(phi_cdy.*T_cdy);
-    RHS = RHS + (ones(size(S.phiold))-(1-P.omega)*S.phiold).*T_yy;
-    
+    RHS = RHS+ ((P.omega-1)*ones(size(S.phiold))+(P.omega*(P.omega-1)*ones(size(S.phiold))./(P.omega*(ones(size(S.phiold))-S.phiold)+S.phiold).^2))/2.*phi_cdy.*T_cdy;
+    RHS = RHS+((ones(size(S.phiold))-(1-P.omega)*S.phiold)+(P.omega*ones(size(S.phiold))./(P.omega*(ones(size(S.phiold))-S.phiold)+S.phiold)))/2.*T_yy;
+     
     RHS = RHS + (S.phiold-ones(size(S.phiold))).*(S.w(:,:,1).*T_cdx+S.w(:,:,2).*T_cdy);
     
     RHS = RHS -(P.alpha*ones(size(S.T))+P.nu*S.T).*(S.phi-S.phiold)/dt;
@@ -171,24 +172,14 @@ for k=1:Nt
    % Momentum Balance (7.5.2)
     S.w(:,:,1)=-P.kappa_perp_hat*kappa_scale(P,S.T).*pi_cdx./mu_hat(P,S.T)./(ones(size(S.phi))-S.phi);
     S.w(:,:,2)=-P.kappa_par_hat*kappa_scale(P,S.T).*pi_cdy./mu_hat(P,S.T)./(ones(size(S.phi))-S.phi);
-    %kappa_scale(P,S.T)
+    
         %% Boundary Condition
-    %Left and Right
-    %Nx = P.Nx;
-    %Ny = P.Ny;
-    %    S.w(:,1,1) = S.w(:,1,1) - j_evap_momentum(P,S.T(:,1),S.phi(:,1),t)./(ones(size(S.phi(:,1)))-S.phi(:,1));
-    %    S.w(:,Nx,1) = S.w(:,Nx,1) +
-    %    j_evap_momentum(P,S.T(:,Nx),S.phi(:,Nx),t)./(ones(size(S.phi(:,1)))-S.phi(:,Nx));
-
-    %    S.w(1,:,2) = S.w(1,:,2) - j_evap_momentum(P,S.T(1,:),S.phi(1,:),t)./(ones(size(S.phi(1,:)))-S.phi(1,:));
-    %    S.w(Ny,:,2) = S.w(Ny,:,2) + j_evap_momentum(P,S.T(Ny,:),S.phi(Ny,:),t)./(ones(size(S.phi(1,:)))-S.phi(Ny,:));
-
     
     w_1_left = S.w(:,1,1);
     w_1_right = S.w(:,end,1);
     w_2_top = S.w(1,:,2);
     w_2_bottom = S.w(end,:,2);
-        % No Flux
+        % No inward Flux Condition
     w_1_left(w_1_left>0) = 0;
     w_1_right(w_1_right<0) = 0;
     w_2_top(w_2_top>0) = 0;
@@ -204,31 +195,16 @@ for k=1:Nt
     % 5. Shrinkage on boundary
     %Top/Bottom T & Phi
     for i=2:P.Nx-1
-            S.phi(1,i)= interp1(T_interp,phi_interp,min(1,(S.Told(1,i)*(P.T_D-P.T_0)+P.T_0-273)/175)); % Use previous T on boundary to interpolate preprocessed root data
-            S.phi(P.Ny,i)= interp1(T_interp,phi_interp,min(1,(S.Told(P.Ny,i)*(P.T_D-P.T_0)+P.T_0-273)/175)); % Use previous T on boundary to interpolate preprocessed root data
-            %S.phi(1,i) = S.phi(2,i);
-            %S.phi(P.Ny,i) = S.phi(P.Ny-1,i);
-            if(S.isFirst)
-                [r_top,fval,exitflag,out]=root_top(P,S,h,i,.1);
-                if(exitflag>0 && imag(r_top(1)) ==0 && imag(fval(1)) ==0)
-                    S.T(1,i)=r_top(1);
-                else
-                    disp('ROOT SOLVING ERROR \n'); 
-                    return;
-                end
-                [r_bot,fval,exitflag,out] = root_bottom(P,S,h,i,.1);
-                 if(exitflag>0 && imag(r_bot(1)) ==0 && imag(fval(1)) ==0)
-                    S.T(P.Ny,i) = r_bot(1);
-                 else
-                    disp('ROOT SOLVING ERROR \n'); 
-                    return;
-                 end
-            else
-                	a=2/(h(1,i,2)+h(2,i,2))*((1-S.phi(1,i))/P.omega+S.phi(1,i));
-                    S.T(1,i)=max(S.Told(1,i),(S.T(2,i)*a+1-j_evap(P,S.Told(1,i),S.phi(1,i),t)) / (1+a));
-                    a=2/(h(P.Ny,i,2)+h(P.Ny-1,i,2))*((1-S.phi(P.Ny,i))/P.omega+S.phi(P.Ny,i));
-                    S.T(P.Ny,i)=max(S.Told(P.Ny,i),(S.T(P.Ny-1,i)*a+1-j_evap(P,S.Told(P.Ny,i),S.phi(P.Ny,i),t)) / (1+a));
-            end
+        S.phi(1,i)= interp1(T_interp,phi_interp,min(1,max(0,(S.Told(1,i)*(P.T_D-P.T_0)+P.T_0-273)/175))); % Use previous T on boundary to interpolate preprocessed root data
+        S.phi(P.Ny,i)= interp1(T_interp,phi_interp,min(1,max(0,(S.Told(P.Ny,i)*(P.T_D-P.T_0)+P.T_0-273)/175))); % Use previous T on boundary to interpolate preprocessed root data
+        % Dirichlet Condition on Temp Top and Bottom
+        if(t*P.t_0>60*5)
+           S.T(1,i) = ((90+273)-P.T_0)/(P.T_D-P.T_0)/5*t*P.t_0/60; 
+           S.T(P.Ny,i) = ((90+273)-P.T_0)/(P.T_D-P.T_0)/5*t*P.t_0/60; 
+        else
+           S.T(1,i) = ((90+273)-P.T_0)/(P.T_D-P.T_0)+(t*P.t_0/60-300*P.t_0/60); 
+           S.T(P.Ny,i) = ((90+273)-P.T_0)/(P.T_D-P.T_0)+;
+        end
         h(1,i,1) = h_0*sqrt(P.phi_0*(S.phi(1,i)).^(-1).*xi(P,S.T(1,i)));
         h(1,i,2) = h_0*sqrt(P.phi_0*(S.phi(1,i)).^(-1)./xi(P,S.T(1,i)));
         h(P.Ny,i,1) = h_0*sqrt(P.phi_0*(S.phi(P.Ny,i)).^(-1).*xi(P,S.T(P.Ny,i)));
@@ -236,33 +212,20 @@ for k=1:Nt
     end
     %Left/Right T & Phi
     for j=2:P.Ny-1
-        S.phi(j,1)= interp1(T_interp,phi_interp,min(1,(S.Told(j,1)*(P.T_D-P.T_0)+P.T_0-273)/175)); % Use previous T on boundary to interpolate preprocessed root data
-        S.phi(j,P.Nx)= interp1(T_interp,phi_interp,min(1,(S.Told(j,P.Nx)*(P.T_D-P.T_0)+P.T_0-273)/175)); % Use previous T on boundary to interpolate preprocessed root data
-        %    S.phi(j,1) = S.phi(j,2);
-        %    S.phi(j,P.Nx) = S.phi(j,P.Nx-1);
-        if(S.isFirst)
-            [r_left,fval,exitflag,out]=root_left(P,S,h,j,.1);
-            if(exitflag>0 && imag(r_left(1)) ==0 && imag(fval(1)) ==0 )
-                S.T(j,1) = r_left(1);
-            else
-                disp('ROOT FINDING ERROR\n'); 
-                return;
-            end
-            [r_right,fval,exitflag,out] = root_right(P,S,h,j,.1);
-            if(exitflag>0 && imag(r_right(1)) ==0 && imag(fval(1)) ==0)
-                S.T(j,P.Nx) = r_right(1);
-            else
-                disp('ROOT FINDING ERROR\n'); 
-                return;
-            end
-        else
+        S.phi(j,1)= interp1(T_interp,phi_interp,min(1,max(0,(S.Told(j,1)*(P.T_D-P.T_0)+P.T_0-273)/175))); % Use previous T on boundary to interpolate preprocessed root data
+        S.phi(j,P.Nx)= interp1(T_interp,phi_interp,min(1,max(0,(S.Told(j,P.Nx)*(P.T_D-P.T_0)+P.T_0-273)/175))); % Use previous T on boundary to interpolate preprocessed root data
+
             % set T on boundary (using old T in j_evap)
+            %temp = (P.T_0-293)/(P.T_D-P.T_0); % Room temperature
+             temp = (P.T_0-100-273)/(P.T_D-P.T_0); % hot surface B.L. temperature
             a=2/(h(j,1,1)+h(j,2,1))/(P.omega*(1-S.phi(j,1))+S.phi(j,1)); %helpful coefficient
-            S.T(j,1)=max(S.Told(j,1),(S.T(j,2)*a+1-j_evap(P,S.Told(j,1),S.phi(j,1),t)) / (1+a));
-            a=2/(h(j,P.Nx,1)+h(j,P.Nx-1,1))/(P.omega*(1-S.phi(j,P.Nx))+S.phi(j,P.Nx));
-            S.T(j,P.Nx)=max(S.Told(j,P.Nx),(S.T(j,P.Nx-1)*a+1-j_evap(P,S.Told(j,P.Nx),S.phi(j,P.Nx),t)) / (1+a));
- 
-        end
+            a=a/2+2/(h(j,1,1)+h(j,2,1))*((1-S.phi(j,1))/P.omega+S.phi(j,1));
+            S.T(j,1)=max(S.Told(j,1),(S.T(j,2)*a-temp-j_evap(P,S.Told(j,1),S.phi(j,1),t)) / (1+a));     
+            a=2/(h(j,P.Nx,1)+h(j,P.Nx-1,1))*((1-S.phi(j,P.Nx))/P.omega+S.phi(j,P.Nx));
+            a=a/2+2/(h(j,P.Nx,1)+h(j,P.Nx-1,1))/(P.omega*(1-S.phi(j,P.Nx))+S.phi(j,P.Nx));
+
+            S.T(j,P.Nx)=max(S.Told(j,P.Nx),(S.T(j,P.Nx-1)*a-temp-j_evap(P,S.Told(j,P.Nx),S.phi(j,P.Nx),t)) / (1+a));
+      
         h(j,1,1) = h_0*sqrt(P.phi_0*(S.phi(j,1)).^(-1).*xi(P,S.T(j,1)));
         h(j,1,2) = h_0*sqrt(P.phi_0*(S.phi(j,1)).^(-1)./xi(P,S.T(j,1)));
         h(j,P.Nx,1) = h_0*sqrt(P.phi_0*(S.phi(j,P.Nx)).^(-1).*xi(P,S.T(j,P.Nx)));
@@ -284,23 +247,23 @@ S.phi(P.Ny,P.Nx)=(S.phi(P.Ny,P.Nx-1)+S.phi(P.Ny-1,P.Nx))/2;
     
     %Bottom
     
-    h(P.Ny,:,1) = h_0*(P.phi_0*(min(S.phi(P.Ny,:),0.4347*ones(size(S.phi(P.Ny,:))))).^(-1).*xi(P,S.T(P.Ny,:))).^(1/3);
-    h(P.Ny,:,2) = h_0*(P.phi_0*(min(S.phi(P.Ny,:),0.4347*ones(size(S.phi(P.Ny,:))))).^(-1)./xi(P,S.T(P.Ny,:))).^(1/3);
+    h(P.Ny,:,1) = h_0*(P.phi_0*(min(S.phi(P.Ny,:),0.4347*ones(size(S.phi(P.Ny,:))))).^(-1).*xi(P,S.T(P.Ny,:))).^(1/2);
+    h(P.Ny,:,2) = h_0*(P.phi_0*(min(S.phi(P.Ny,:),0.4347*ones(size(S.phi(P.Ny,:))))).^(-1)./xi(P,S.T(P.Ny,:))).^(1/2);
     
     %Top
-    h(1,:,1) = h_0*(P.phi_0*(min(S.phi(1,:),0.4347*ones(size(S.phi(1,:))))).^(-1).*xi(P,S.T(1,:))).^(1/3);
-    h(1,:,2) = h_0*(P.phi_0*(min(S.phi(1,:),0.4347*ones(size(S.phi(1,:))))).^(-1)./xi(P,S.T(1,:))).^(1/3);
+    h(1,:,1) = h_0*(P.phi_0*(min(S.phi(1,:),0.4347*ones(size(S.phi(1,:))))).^(-1).*xi(P,S.T(1,:))).^(1/2);
+    h(1,:,2) = h_0*(P.phi_0*(min(S.phi(1,:),0.4347*ones(size(S.phi(1,:))))).^(-1)./xi(P,S.T(1,:))).^(1/2);
     
     %Left
-    h(:,1,1) = h_0*(P.phi_0*(min(S.phi(:,1),0.4347*ones(size(S.phi(:,1))))).^(-1).*xi(P,S.T(:,1))).^(1/3);
-    h(:,1,2) = h_0*(P.phi_0*(min(S.phi(:,1),0.4347*ones(size(S.phi(:,1))))).^(-1)./xi(P,S.T(:,1))).^(1/3);
+    h(:,1,1) = h_0*(P.phi_0*(min(S.phi(:,1),0.4347*ones(size(S.phi(:,1))))).^(-1).*xi(P,S.T(:,1))).^(1/2);
+    h(:,1,2) = h_0*(P.phi_0*(min(S.phi(:,1),0.4347*ones(size(S.phi(:,1))))).^(-1)./xi(P,S.T(:,1))).^(1/2);
     %Right
-    h(:,P.Nx,1) = h_0*(P.phi_0*(min(S.phi(:,P.Nx),0.4347*ones(size(S.phi(:,P.Nx))))).^(-1).*xi(P,S.T(:,P.Nx))).^(1/3);
-    h(:,P.Nx,2) = h_0*(P.phi_0*(min(S.phi(:,P.Nx),0.4347*ones(size(S.phi(:,P.Nx))))).^(-1)./xi(P,S.T(:,P.Nx))).^(1/3);
+    h(:,P.Nx,1) = h_0*(P.phi_0*(min(S.phi(:,P.Nx),0.4347*ones(size(S.phi(:,P.Nx))))).^(-1).*xi(P,S.T(:,P.Nx))).^(1/2);
+    h(:,P.Nx,2) = h_0*(P.phi_0*(min(S.phi(:,P.Nx),0.4347*ones(size(S.phi(:,P.Nx))))).^(-1)./xi(P,S.T(:,P.Nx))).^(1/2);
 
     
     % Stop for internal temperature 65 deg C
-    if(S.T(floor(P.Ny/2),floor(P.Nx/2))*(P.T_D-P.T_0)+P.T_0-273>70)
+    if(S.T(floor(P.Ny/2),floor(P.Nx/2))*(P.T_D-P.T_0)+P.T_0-273>65)
         endFlag = 1;
     end
     
@@ -309,7 +272,7 @@ S.phi(P.Ny,P.Nx)=(S.phi(P.Ny,P.Nx-1)+S.phi(P.Ny-1,P.Nx))/2;
     
     if( mod(k,P.outevery)==0 )
         
-        if( mod(k,P.outevery*10)==0 )
+        if( mod(k,P.outevery*100)==0 )
         plot(1);
         % Get x,y coordinates from h
         [x y] = visualize(h);
@@ -360,8 +323,7 @@ S.phi(P.Ny,P.Nx)=(S.phi(P.Ny,P.Nx-1)+S.phi(P.Ny-1,P.Nx))/2;
         output(S,h,t,P.datadir,P.prefix,outcount);
         outcount = outcount + 1;
         if(endFlag==1)
-            disp('Breaking out of function');
-            return;
+            error('Breaking out of function');
         end
     end
 end

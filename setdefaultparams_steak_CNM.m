@@ -4,7 +4,7 @@
 %	@project JMU_REU_18
 %	@date 6/4/18
 %
-function P = setdefaultparams_steak_CNM
+function P = setdefaultparams_steak_CNM(kappa_init,kappa_final)
   addpath('./steaksrc/');
 
     % define the spatial domain
@@ -19,11 +19,10 @@ function P = setdefaultparams_steak_CNM
     %  output information
     %
     P.prefix       = 'steak_default';
-    P.datadir='.\perm1e-17_diff_CNM_medium_2\';
-    P.outevery     = 10;  
+
    
     P.T_0 = 273+4; % Initial Temperature (K)
-    P.T_D = 273+176; % Maximum Temperature (K)
+    P.T_D = 273+152; % Maximum Temperature (K)
     
     % Table 1 Material Properties 
     
@@ -45,10 +44,13 @@ function P = setdefaultparams_steak_CNM
     
     P.D_a = 2.5e-5; % Diffusion coefficient of water vapor in air (m^2/s)
     P.D = P.k_f/P.rho_f/P.c_f; % Thermal diffusivity of fluid (m^2/s)
-    P.Diff = 7e-9; % Diffusion coefficient of moisture [Feyesian]
+    P.Diff = 0; % Diffusion coefficient of moisture [Feyesian]
     
-    P.kappa_perp = 1e-15; % Permiability of solid in x-direction (m^2)
-    P.kappa_par = P.kappa_perp; % Permiability of solid in y-direction (m^2)
+        P.kappa_perp = kappa_init; % Permiability of solid in x-direction (m^2)
+    P.kappa_scaling = kappa_final/kappa_init-1;
+    P.datadir=strcat('.\dir_CNM_', num2str(kappa_init),'_',num2str(kappa_final),'\');
+    P.kappa_par = P.kappa_perp*1.2; % Permiability of solid in y-direction (m^2)
+    
     
     P.M_f = 1.8e-2; % Molar mass of fluid (kg/mol)
     P.V_f = P.M_f/P.rho_f; % Molar volume of fluid (m^3/mol)
@@ -75,7 +77,7 @@ function P = setdefaultparams_steak_CNM
     
     
     P.phi_0 = 0.215761926598984;
-    P.chi_pd=.9;
+    P.chi_pd=.76;
     P.chi_pn=.7;
     
     
@@ -113,9 +115,10 @@ function P = setdefaultparams_steak_CNM
 
     % time stepping info
     %
-    P.dt = 4e-6;
+    P.dt = 2e-4;
     P.Nt = round(7200/P.t_0/P.dt);    
-    
+    P.outevery     = round(60/P.t_0/P.dt); 
+
     
     % Non-dimensional parameters
     

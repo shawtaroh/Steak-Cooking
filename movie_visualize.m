@@ -1,11 +1,11 @@
 %
 % make a movie 
 %
-Datadir ='.\perm1e-16_nodiff\'
+Datadir ='.\dir_new_2.5e-18_2.5e-17\'
 % open a figure for plotting
 %
 scrsz = get(0,'ScreenSize')
-fig = figure('Position',[scrsz(3)/8 scrsz(4)/2 640 640])
+fig = figure('Position',[0 0 640 640])
 
 % video object
 %
@@ -47,8 +47,9 @@ phi_w=[0 0];
 T_max = 0;
 phi_max = 0;
 phi_min = 1;
-for k_t=1:100:length(matFiles)
+for k_t=20:20:60
     disp(k_t)
+
         % load the grid and parameters
     load(sprintf('%s%s',Datadir,matFiles(k_t).name));
             S.w(1,1,1)=0;
@@ -78,8 +79,9 @@ for k_t=1:100:length(matFiles)
     end
 end
 
-for k_t=1:10:length(matFiles)/3*2
+for k_t=1:20:61
     disp(k_t)
+        pause;
         % load the grid and parameters
     load(sprintf('%s%s',Datadir,matFiles(k_t).name));
 
@@ -96,12 +98,12 @@ for k_t=1:10:length(matFiles)/3*2
         %hpc = pcolor(x,y,S.T*(P.T_D-P.T_0));
         %set(hpc,'edgecolor','none','facelighting','flat','facecolor','interp');
         %caxis([0 75])
-        %caxis([P.T_0-273 T_max*(P.T_D-P.T_0)+P.T_0-273])
+        caxis([P.T_0-273 T_max*(P.T_D-P.T_0)+P.T_0-273])
         % Phi
-        hpc = pcolor(x,y,S.phi);
+        hpc = pcolor(x,y,S.T*(P.T_D-P.T_0)+P.T_0-273);
         set(hpc,'edgecolor','none','facelighting','flat','facecolor','interp');
         %caxis([P.phi_0 phi_max])
-        caxis([phi_min phi_max])
+        %caxis([phi_min phi_max])
         
         % Porosity
         %hpc = pcolor(x,y,ones(size(S.phi))-S.phi);

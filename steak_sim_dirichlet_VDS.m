@@ -4,7 +4,7 @@
 %
 function steak_sim_fastest_VDS( P )
 addpath('./steaksrc/');
-load('low_phi_root_interp_175.mat','T_interp','phi_interp')
+load('phi_root_interp_175_phi0_updated.mat','T_interp','phi_interp')
 % output all parameters to a file
 %
 paramfile( P );
@@ -276,8 +276,8 @@ S.phi(P.Ny,P.Nx)=(S.phi(P.Ny,P.Nx-1)+S.phi(P.Ny-1,P.Nx))/2;
 
     
     % Stop for internal temperature 65 deg C
-    if(S.T(floor(P.Ny/2),floor(P.Nx/2))*(P.T_D-P.T_0)+P.T_0-273>65)
-        %endFlag = 1;
+    if(S.T(floor(P.Ny/2),floor(P.Nx/2))*(P.T_D-P.T_0)+P.T_0-273>70)
+        endFlag = 1;
     end
     
     S.isFirst = 0;
@@ -285,7 +285,7 @@ S.phi(P.Ny,P.Nx)=(S.phi(P.Ny,P.Nx-1)+S.phi(P.Ny-1,P.Nx))/2;
     
     if( mod(k,P.outevery)==0 )
         
-        if( mod(k,P.outevery*100)==0 )
+        if( mod(k,P.outevery*10)==0 )
         plot(1);
         % Get x,y coordinates from h
         [x y] = visualize(h);
